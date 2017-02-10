@@ -19,9 +19,8 @@ class BlogHandler(webapp2.RequestHandler):
             Get all posts by a specific user, ordered by creation date (descending).
             The user parameter will be a User object.
         """
-
-        # TODO - filter the query so that only posts by the given user
-        return None
+        query = Post.all().filter("author", user).order("-created")
+        return query.fetch(limit=limit, offset=offset)
 
     def get_user_by_name(self, username):
         """ Get a user object from the db, based on their username """
@@ -75,8 +74,6 @@ class BlogIndexHandler(BlogHandler):
     page_size = 5
 
     def get(self, username=""):
-        """ """
-
         # If request is for a specific page, set page number and offset accordingly
         page = self.request.get("page")
         offset = 0
@@ -142,7 +139,7 @@ class NewPostHandler(BlogHandler):
 
             # get the id of the new post, so we can render the post's page (via the permalink)
             id = post.key().id()
-            self.redirect("/blog/%s" % id)
+            self.redirect("/post/%s" % id)
         else:
             error = "we need both a title and a body!"
             self.render_form(title, body, error)
@@ -254,11 +251,9 @@ class SignupHandler(BlogHandler):
             response = t.render(username=username, email=email, errors=errors)
             self.response.out.write(response)
         else:
-            self.redirect('/blog/newpost')
+            self.redirect('/post/newpost')
 
 class LoginHandler(BlogHandler):
-
-    # TODO - The login code here is mostly set up for you, but there isn't a template to log in
 
     def render_login_form(self, error=""):
         """ Render the login form with or without an error, based on parameters """
@@ -280,7 +275,7 @@ class LoginHandler(BlogHandler):
             self.render_login_form(error="Invalid username")
         elif hashutils.valid_pw(submitted_username, submitted_password, user.pw_hash):
             self.login_user(user)
-            self.redirect('/blog/newpost')
+            self.redirect('/post/newpost')
         else:
             self.render_login_form(error="Invalid password")
 
@@ -288,14 +283,14 @@ class LogoutHandler(BlogHandler):
 
     def get(self):
         self.logout_user()
-        self.redirect('/blog')
+        self.redirect('/post')
 
 app = webapp2.WSGIApplication([
     ('/', IndexHandler),
-    ('/blog', BlogIndexHandler),
-    ('/blog/newpost', NewPostHandler),
-    webapp2.Route('/blog/<id:\d+>', ViewPostHandler),
-    webapp2.Route('/blog/<username:[a-zA-Z0-9_-]{3,20}>', BlogIndexHandler),
+    ('/post', BlogIndexHandler),
+    ('/post/newpost', NewPostHandler),
+    webapp2.Route('/post/<id:\d+>', ViewPostHandler),
+    webapp2.Route('/post/<username:[a-zA-Z0-9_-]{3,20}>', BlogIndexHandler),
     ('/signup', SignupHandler),
     ('/login', LoginHandler),
     ('/logout', LogoutHandler)
@@ -303,5 +298,5 @@ app = webapp2.WSGIApplication([
 
 # A list of paths that a user must be logged in to access
 auth_paths = [
-    '/blog/newpost'
+    '/post/newpost'
 ]
